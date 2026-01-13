@@ -218,6 +218,17 @@ az sql server update   --resource-group $RG_NAME   --name $SQL_SERVER_NAME   --e
 
 ##  테스트: SQL 데이터 삽입 및 차단 확인
 
+```sql
+# 1.
+az provider show --namespace Microsoft.Sql --query registrationState  
+
+# 2.
+az sql server create --enable-ad-only-auth --external-admin-principal-type User --external-admin-name {adminName} --external-admin-sid {adminSID} -g {resourceGroup} -n pp-sql-westus -l westus  
+
+# 3.
+az sql db create --resource-group practice-260107 --server pp-sql-westus --name "TestDB" --service-objective Basic   
+``` 
+
 ### [단계 1] 테스트 데이터 넣기 (잠깐 문 열기)
 1. Azure Portal → SQL Server 접속
 2. Networking → Public network access → **Selected networks**
