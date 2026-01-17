@@ -55,8 +55,7 @@
 - Secondary VNet: westus
 - 두 VNet 간 피어링 설정 후 Enterprise Policy 연결
 
-![alt text](image-2.png)
-
+<img width="1019" height="627" alt="Image" src="https://github.com/user-attachments/assets/2bd413b1-8907-464f-becc-d73d022d40f7" />
 
 
 ##  Step-by-Step Guide
@@ -113,12 +112,12 @@ az network vnet subnet create \
 - Option 1. NewSubnetInjection.ps1 위 방식과 흡사하게 실행
 - Option 2.Power Platform Admin Center에서 
 환경 → 설정 → Data & Privacy → Azure Virtual Network policies 선택 후 저장 
-![alt text](image.png)
+<img width="999" height="610" alt="Image" src="https://github.com/user-attachments/assets/c630052c-6f60-43e7-b6a3-e0a9e0e45e88" />
 
 
 ### 5. 연결 확인 
 - PPAC에서 활동 로그(Activity Log) 확인 → 상태가 성공으로 표시되면 정상.
-![alt text](image-1.png)
+<img width="2039" height="571" alt="Image" src="https://github.com/user-attachments/assets/89842a72-ad24-405d-b0c2-88aef12c7f0d" />
 - PowerShell:
 
 ```powershell
