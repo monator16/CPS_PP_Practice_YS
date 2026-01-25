@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A2. 에이전트 모델의 이해 (Updated)</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --accent-color: #0078d4; /* MS Blue */
+            --table-border: #cccccc;
+            --header-bg: #f3f3f3;
+            --code-bg: #f4f4f4;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', 'Apple SD Gothic Neo', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            overflow: hidden;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 슬라이드 컨테이너 */
+        .slide-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 80px;
+            position: relative;
+        }
+
+        .slide {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            height: 100%;
+            flex-direction: column;
+            justify-content: center;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 타이포그래피 */
+        h1 { font-size: 3.5rem; color: var(--accent-color); margin-bottom: 20px; line-height: 1.2; font-weight: 800; }
+        h2 { font-size: 2.5rem; color: #111; border-bottom: 3px solid var(--accent-color); padding-bottom: 15px; margin-bottom: 30px; }
+        h3 { font-size: 1.8rem; color: #005a9e; margin-top: 25px; margin-bottom: 15px; font-weight: 600; }
+        p, li { font-size: 1.5rem; line-height: 1.6; margin-bottom: 15px; color: #444; }
+        
+        ul, ol { padding-left: 40px; }
+        li { margin-bottom: 12px; }
+        strong { color: #000; font-weight: 700; background-color: rgba(0, 120, 212, 0.1); padding: 0 4px; border-radius: 4px; }
+        code { background-color: var(--code-bg); padding: 2px 6px; border-radius: 4px; font-family: Consolas, monospace; font-size: 0.9em; color: #d63384; border: 1px solid #e0e0e0; }
+        a { color: var(--accent-color); text-decoration: none; font-weight: bold; }
+
+        /* 테이블 스타일 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 1.1rem;
+            background-color: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid var(--table-border);
+            padding: 12px; /* 패딩 미세 조정 */
+            text-align: left;
+            vertical-align: middle;
+        }
+        th { background-color: var(--header-bg); color: #000; font-weight: 700; border-bottom: 2px solid #bbb; white-space: nowrap; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+
+        /* 상태 뱃지 스타일 */
+        .badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .badge-retired { background-color: #ffebee; color: #c62828; }
+        .badge-default { background-color: #e3f2fd; color: #1565c0; }
+        .badge-preview { background-color: #fff3e0; color: #ef6c00; }
+        .badge-experimental { background-color: #f3e5f5; color: #7b1fa2; }
+        .badge-general { background-color: #e8f5e9; color: #2e7d32; }
+
+        /* 이미지 및 박스 */
+        img { 
+            max-width: 100%; 
+            max-height: 50vh; 
+            border-radius: 8px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); 
+            margin-top: 20px; 
+            display: block; 
+            margin-left: auto; 
+            margin-right: auto;
+            border: 1px solid #eee;
+        }
+        
+        .alert {
+            background-color: #fff4e5;
+            border-left: 6px solid #ff8c00;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 6px;
+            font-size: 1.2rem;
+            color: #5a3a00;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .tip {
+            background-color: #e5f6fd;
+            border-left: 6px solid var(--accent-color);
+            padding: 20px;
+            margin: 25px 0;
+            border-radius: 6px;
+            font-size: 1.3rem;
+            color: #004377;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* 컨트롤러 및 프로그레스 바 */
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 100;
+            display: flex;
+            gap: 12px;
+        }
+        
+        button {
+            background-color: #fff;
+            color: #333;
+            border: 1px solid #ccc;
+            padding: 12px 24px;
+            cursor: pointer;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: 600;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: all 0.2s;
+        }
+        button:hover { 
+            background-color: var(--accent-color); 
+            color: #fff; 
+            border-color: var(--accent-color);
+            transform: translateY(-2px);
+        }
+
+        .progress-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            height: 6px;
+            background-color: var(--accent-color);
+            width: 0%;
+            transition: width 0.3s;
+        }
+        
+        .page-number {
+            position: fixed;
+            bottom: 35px;
+            left: 30px;
+            font-size: 1.2rem;
+            color: #888;
+            font-weight: 600;
+        }
+
+        /* 타이틀 슬라이드 중앙 정렬 */
+        #slide-0 { text-align: center; align-items: center; }
+        #slide-0 h1 { font-size: 5rem; margin-bottom: 30px; color: #000; }
+        #slide-0 p { font-size: 2.2rem; color: #666; margin-bottom: 10px; }
+        .nav-hint { font-size: 1.2rem !important; color: #999 !important; margin-top: 60px !important; }
+
+    </style>
+</head>
+<body>
+
+    <div class="slide-container">
+        
+        <div class="slide active" id="slide-0">
+            <h1>A2. 에이전트 모델의 이해</h1>
+            <p>Copilot Studio 심화 과정</p>
+            <p class="nav-hint">Use Arrow Keys (← / →) to Navigate</p>
+        </div>
+
+        <div class="slide">
+            <h2>1. 학습 목표</h2>
+            <ul>
+                <li>✅ 에이전트 사용 사례에 <strong>최적화된 AI 모델 선택</strong> 방법</li>
+                <li>✅ <strong>모델별 성능 특성</strong> 비교</li>
+                <li>✅ 에이전트의 <strong>기본 모델 변경</strong> 방법</li>
+                <li>✅ 모델 교체 시 <strong>출력 차이점</strong>(품질·구조·깊이) 테스트 및 평가</li>
+            </ul>
+        </div>
+
+        <div class="slide">
+            <h2>2. 배경 지식: 에이전트 모델이란?</h2>
+            <ul>
+                <li><strong>정의:</strong> Copilot 에이전트의 응답을 생성하는 <strong>생성형 AI 엔진</strong></li>
+                <li><strong>중요성:</strong> 선택한 모델이 <strong>속도, 품질, 비용, 추론 능력</strong>을 결정</li>
+                <li><strong>활용:</strong> 시나리오별 특화 (예: 빠른 응답 vs 심층 분석 vs 복잡한 추론)</li>
+            </ul>
+        </div>
+
+        <div class="slide">
+            <h2>3. 모델 기준: 사용 카테고리</h2>
+            <p>모델의 성격에 따라 다음 3가지로 분류됩니다.</p>
+            <table>
+                <tr>
+                    <th>태그</th>
+                    <th>설명</th>
+                    <th>강점</th>
+                    <th>특징 (지연/비용)</th>
+                </tr>
+                <tr>
+                    <td><strong>Deep</strong></td>
+                    <td>복잡한 분석·다단계 추론</td>
+                    <td>정책 분석, 장문 종합</td>
+                    <td>높음 / 높음</td>
+                </tr>
+                <tr>
+                    <td><strong>Auto</strong></td>
+                    <td>자동 라우팅·워크플로</td>
+                    <td>헬프데스크, 복합 문의</td>
+                    <td>가변 / 가변</td>
+                </tr>
+                <tr>
+                    <td><strong>General</strong></td>
+                    <td>일반 대화·속도 중심</td>
+                    <td>초안 작성, FAQ</td>
+                    <td>낮음 / 낮음</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="slide">
+            <h2>3. 모델 기준: 출시 단계</h2>
+            <table>
+                <tr>
+                    <th>태그</th>
+                    <th>설명 및 주의사항</th>
+                </tr>
+                <tr>
+                    <td><strong>Experimental</strong></td>
+                    <td>실험적 모델. 프로덕션 비권장. 가용성/품질 제한 가능.</td>
+                </tr>
+                <tr>
+                    <td><strong>Preview</strong></td>
+                    <td>정식 출시 전 미리보기. 안정성 제한 가능.</td>
+                </tr>
+                <tr>
+                    <td><strong>(태그 없음)</strong></td>
+                    <td><strong>정식 출시(GA)</strong>. 규모 확장 및 프로덕션 사용 적합.</td>
+                </tr>
+                <tr>
+                    <td><strong>Default</strong></td>
+                    <td>기본 모델. 일반적으로 성능이 가장 우수한 정식 출시 모델.</td>
+                </tr>
+                <tr>
+                    <td><strong>Retired</strong></td>
+                    <td>지원 종료 상태. (최대 30일 유예 후 사용 불가)</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="slide">
+            <h2>OpenAI 모델 라인업 (2025 기준)</h2>
+            <table style="font-size: 0.95rem;">
+                <thead>
+                    <tr>
+                        <th width="15%">모델</th>
+                        <th width="10%">카테고리</th>
+                        <th width="12%">상태</th>
+                        <th width="30%">강점</th>
+                        <th width="33%">사용 사례</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>GPT-4o</td>
+                        <td>General</td>
+                        <td><span class="badge badge-retired">Retired</span></td>
+                        <td>빠르고 다재다능</td>
+                        <td>Q&A, 요약</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-4.1</td>
+                        <td>General</td>
+                        <td><span class="badge badge-default">Default</span></td>
+                        <td>높은 정확도·추론</td>
+                        <td>정책·보고서 분석</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-5 Chat</td>
+                        <td>General</td>
+                        <td><span class="badge badge-preview">Preview</span></td>
+                        <td>자연스러운 대화</td>
+                        <td>IT/HR 챗봇</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-5 Auto</td>
+                        <td>Auto</td>
+                        <td><span class="badge badge-general">General</span></td>
+                        <td>워크플로 자동화</td>
+                        <td>엔드-투-엔드 프로세스</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-5 Reasoning</td>
+                        <td>Deep</td>
+                        <td><span class="badge badge-preview">Preview</span></td>
+                        <td>심층 추론 (2024년 10월 학습)</td>
+                        <td>전략·데이터 분석</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-5.1 Chat</td>
+                        <td>General</td>
+                        <td><span class="badge badge-experimental">Experimental</span></td>
+                        <td>최신 대화 성능</td>
+                        <td>범용 Q&A</td>
+                    </tr>
+                    <tr>
+                        <td>GPT-5.1 Reasoning</td>
+                        <td>Deep</td>
+                        <td><span class="badge badge-experimental">Experimental</span></td>
+                        <td>최고 수준 추론</td>
+                        <td>초고난도 분석</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="alert" style="font-size: 1rem; padding: 10px; margin-top: 10px;">⚠️ <strong>주의:</strong> 실험적·프리뷰 모델은 <strong>프로덕션 비권장</strong>, 테스트용으로만 사용.</div>
+        </div>
+
+        <div class="slide">
+            <h2>Anthropic 모델 (외부 모델)</h2>
+            <ul>
+                <li><strong>Claude Sonnet 4.5:</strong> 코딩, 도구 사용, 단계별 추론 탁월 (고급 개발 지원)</li>
+                <li><strong>Claude Opus 4.1:</strong> 집중적 분석, 구조화된 문제 해결 (리서치 프로젝트)</li>
+            </ul>
+            <div class="alert">
+                ⚠️ <strong>중요:</strong> Microsoft 외부의 서드파티 모델입니다.<br>
+                - 별도 약관 동의 필요 / 프로덕션 비권장<br>
+                - 용량 제한으로 지연/타임아웃 발생 가능
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>4. 모델 주요 특징</h2>
+            <h3>컨텍스트 길이 & 지식 한계</h3>
+            <ul>
+                <li>긴 맥락 반영 가능 (예: GPT-4.1 최대 128K 토큰)</li>
+                <li><strong>지식 단절(Cut-off):</strong> 2024년 중반까지의 데이터로 학습됨</li>
+            </ul>
+            <h3>주기적 업그레이드</h3>
+            <ul>
+                <li>Microsoft는 정기적으로 기본 모델을 업그레이드함 (예: '25년 11월 GPT-5.1 출시)</li>
+                <li>경로: <code>Settings → Generative AI → Model</code></li>
+            </ul>
+        </div>
+
+        <div class="slide">
+            <h2>지원 종료(Retired) 모델 관리</h2>
+            <div style="display: flex; align-items: flex-start; gap: 40px;">
+                <div style="flex: 1;">
+                    <ul>
+                        <li><strong>30일 유예 기간:</strong> 호환성 및 안정성 확보를 위해 제공</li>
+                        <li><strong>설정 방법:</strong> "지원 종료된 모델 계속 사용" 토글 활성화</li>
+                        <li><strong>권장:</strong> 이 기간 동안 신규 모델과 응답 비교 후 마이그레이션 완료 필수</li>
+                    </ul>
+                </div>
+                <div style="flex: 1;">
+                    <img src="https://github.com/user-attachments/assets/c99e912d-5fa0-41a2-9949-62c083a7d8af" alt="Retired Model Toggle">
+                </div>
+            </div>
+        </div>
+
+        <div class="slide">
+            <h2>5. 관리자 설정 (Governance)</h2>
+            <table>
+                <tr>
+                    <th>설정 항목</th>
+                    <th>위치</th>
+                    <th>설명</th>
+                </tr>
+                <tr>
+                    <td><strong>Anthropic 허용</strong></td>
+                    <td>M365 관리 센터</td>
+                    <td>전역 관리자가 외부 모델 사용 활성화 필요</td>
+                </tr>
+                <tr>
+                    <td><strong>프리뷰 모델 허용</strong></td>
+                    <td>PP 관리 센터</td>
+                    <td>환경(Environment)별로 프리뷰/실험적 모델 사용 여부 결정</td>
+                </tr>
+                <tr>
+                    <td><strong>지역 간 데이터 이동</strong></td>
+                    <td>PP 관리 센터</td>
+                    <td>실험적 모델이 다른 지역 데이터센터에 있을 경우 허용 필요</td>
+                </tr>
+            </table>
+            <div class="tip">💡 규제가 엄격한 산업군에서는 위 설정들을 <strong>OFF</strong>하여 정식 출시 모델만 사용하도록 제한할 수 있습니다.</div>
+        </div>
+
+        <div class="slide">
+            <h2>6. 응답 서식 (Formatting)</h2>
+            <p>Markdown 및 Power Fx를 활용하여 응답을 구조화합니다.</p>
+            <ul>
+                <li><strong>굵게:</strong> <code>**핵심 강조**</code></li>
+                <li><em>이탤릭:</em> <code>*부드러운 강조*</code></li>
+                <li><a href="#">하이퍼링크</a>: 외부 자료 연결</li>
+                <li><strong>Power Fx:</strong> <code>Text(Now(),"yyyy-mm-dd")</code> 등 동적 데이터 처리</li>
+            </ul>
+            <div class="tip">💡 테스트 창에서 Markdown 문법이 그대로 노출되지 않는지 반드시 확인하세요.</div>
+        </div>
+
+        <div class="slide">
+            <h2>7. 실습: 모델 비교 (GPT-4.1 vs 5.1)</h2>
+            <ol>
+                <li><strong>Hiring Agent 준비:</strong> 설명에 채용 코디네이터 역할 부여</li>
+                <li><strong>테스트 1 (GPT-4.1):</strong> <br>
+                    - <code>이력서 RXXXXX 요약해줘</code><br>
+                    - <code>J1004 개발자 역할 인터뷰 질문과 모범 답안 제안해줘</code></li>
+                <li><strong>모델 변경:</strong> 설정에서 <strong>GPT-5.1 Chat</strong>으로 변경</li>
+                <li><strong>테스트 2 (GPT-5.1):</strong> 동일 질문 수행 후 결과 비교</li>
+            </ol>
+            <p style="color: var(--accent-color); margin-top: 30px; font-weight:bold;">👉 관찰 포인트: 응답의 깊이, 구조, 어조, 구체성 차이 확인</p>
+        </div>
+
+         <div class="slide" style="text-align: center;">
+            <h1>감사합니다</h1>
+            <p>Q & A</p>
+            <div style="font-size: 0.9rem; color: #888; margin-top: 60px;">
+                Reference: Microsoft Copilot Studio Documentation<br>
+                Choose an external model as the primary AI model<br>
+                Multi-agent orchestration announcements
+            </div>
+        </div>
+
+    </div>
+
+    <div class="page-number" id="page-num">1 / 13</div>
+    <div class="progress-bar" id="progress"></div>
+
+    <div class="controls">
+        <button onclick="changeSlide(-1)">◀ 이전</button>
+        <button onclick="changeSlide(1)">다음 ▶</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        const pageNumDisplay = document.getElementById('page-num');
+        const progressBar = document.getElementById('progress');
+
+        function showSlide(index) {
+            slides.forEach((slide, i) => {
+                slide.classList.remove('active');
+                if (i === index) {
+                    slide.classList.add('active');
+                }
+            });
+            
+            // Update Info
+            pageNumDisplay.textContent = `${index + 1} / ${totalSlides}`;
+            progressBar.style.width = `${((index + 1) / totalSlides) * 100}%`;
+        }
+
+        function changeSlide(direction) {
+            currentSlide += direction;
+            if (currentSlide < 0) currentSlide = 0;
+            if (currentSlide >= totalSlides) currentSlide = totalSlides - 1;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === 'Space') {
+                changeSlide(1);
+            } else if (e.key === 'ArrowLeft') {
+                changeSlide(-1);
+            }
+        });
+
+        // Initialize
+        showSlide(0);
+    </script>
+</body>
+</html>
