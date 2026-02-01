@@ -1,7 +1,5 @@
 # 에이전톤 로우코드 데이 - Copilot Studio편 최종 가이드 
 
-# 에이전톤 로우코드 데이 - Copilot Studio편 최종 가이드 
-
 ## 멀티 에이전트 시스템 
 
 ### 멀티 에이전트 시나리오
@@ -62,9 +60,13 @@ No	질문 (User Query)	기대 답변 및 근거	검증 포인트
 (1) m365 User profile 들고 와서 자동으로 직무 판단, 거기에 따른 규정 안내 
 (2) 해외 에이전트는 해외 출장 담당이니까, 여행 예약 API랑 연동하여 처리 
 
+├─ Child 1: 국내 규정 (PDF)
+
+├─ Child 2: 해외 규정 (PDF)
+
+└─ Connected Agent: MSN Weather (Action)
+
 ## 실습
 
 1. 이름및 지침 설정  
-<img width="2300" height="1337" alt="image" src="https://github.com/user-attachments/assets/82c4e86d-28aa-4126-92fe-755469b66e3f" />
-
 
