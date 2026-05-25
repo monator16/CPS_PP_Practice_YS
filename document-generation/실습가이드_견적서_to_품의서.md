@@ -1,7 +1,7 @@
 # 견적서 이미지 한 장으로 품의서 자동 생성하기
 
 > **Microsoft Copilot Studio Workshop**
-> Vision + Word Template + Agent Flow 로 완성하는 업무 자동화 실습
+> Vision + Prompt(Output: Document) + OneDrive로 완성하는 업무 자동화 실습
 
 | ⏱ 소요시간 | 🎯 난이도 | 📦 준비물 |
 |---|---|---|
@@ -17,10 +17,9 @@
 4. [Step 2 — Agent Instructions 작성](#step-2--agent-instructions-작성)
 5. [Step 3 — 견적서 이미지 분석 토픽 만들기](#step-3--견적서-이미지-분석-토픽-만들기)
 6. [Step 4 — Vision 프롬프트 작성 (OCR/추출)](#step-4--vision-프롬프트-작성-ocr추출)
-7. [Step 5 — 품의서 Word 채우기 Flow 연결](#step-5--품의서-word-채우기-flow-연결)
+7. [Step 5 — 품의서 Word 문서 생성](#step-5--품의서-word-문서-생성)
 8. [Step 6 — 테스트 & 데모](#step-6--테스트--데모)
-9. [문제 해결 가이드](#문제-해결-가이드)
-10. [확장 아이디어](#확장-아이디어)
+9. [확장 아이디어](#확장-아이디어)
 
 ---
 
@@ -29,12 +28,12 @@
 실무에서 자주 발생하는 패턴입니다 — **거래처에서 견적서를 사진 또는 PDF로 받고 → 그 내용을 우리 회사 품의서 양식에 옮겨 적어야 하는** 반복 업무. 이걸 Copilot Studio 에이전트 하나로 자동화합니다.
 
 ```
-📷 견적서 사진      👁️ Vision으로        📄 품의서        ✅ 완성 파일
-   업로드      →    데이터 추출    →    템플릿 채우기  →    다운로드
+📷 견적서 사진      👁️ Vision으로        🧠 Prompt        📁 OneDrive
+   업로드      →    데이터 추출    →    Document 생성  →    저장 + 링크
 ```
 
 > 💡 **왜 이 실습인가요?**
-> 이미지 OCR · 데이터 매핑 · 문서 자동 생성을 한 번에 다루기 때문에, Copilot Studio의 핵심 역량 4가지(에이전트, 토픽, Generative Answers, Power Automate Flow)를 모두 체험할 수 있어요.
+> 이미지 OCR · LLM 추론 · 문서 자동 생성을 한 번에 다루며, Copilot Studio Prompt 노드의 **Output: Document** 기능으로 Word 템플릿 필드 매핑 없이 .docx를 직접 받아내는 최신 패턴을 체험합니다.
 
 ---
 
@@ -43,8 +42,8 @@
 | 항목 | 설명 | 상태 |
 |---|---|---|
 | Copilot Studio 라이선스 | Microsoft 365 Copilot 또는 Copilot Studio 단독. 평가판 가능. | 🔴 필수 |
-| Power Automate 권한 | Word/OneDrive 커넥터 사용 가능한 환경 | 🔴 필수 |
-| 품의서 Word 템플릿 | `{{변수}}` 형태의 플레이스홀더가 들어간 .docx | 🔴 필수 |
+| Prompt 노드 Document 출력 지원 환경 | AI Builder Prompt의 Output 유형에 **Document** 가 노출되는 조직 | 🔴 필수 |
+| OneDrive 컬넥터 권한 | 생성된 .docx를 저장하는 용도 | 🔴 필수 |
 | 견적서 샘플 이미지 | 실습용 테스트 이미지 (PNG/JPG) | 🔴 필수 |
 | OneDrive / SharePoint | 완성된 품의서 저장 위치 | 🔴 필수 |
 
@@ -52,7 +51,6 @@
 
 | 파일 | 설명 |
 |---|---|
-| `품의서_템플릿.docx` | 16개 변수 포함된 한국 품의서 양식 |
 | `sampledata_견적서.png` | 가상의 (주)테크솔루션 발행 견적서 |
 
 ---
@@ -91,9 +89,9 @@
 [작업 순서]
 1. 사용자가 견적서 이미지를 업로드하면 인사하고 분석 시작을 안내
 2. 이미지에서 위 정보를 모두 추출 (Vision/OCR)
-3. 추출한 정보를 사용자에게 표 형태로 보여주고 확인 요청
-4. 사용자가 "맞아", "OK" 등 승인하면 품의서 작성 Flow 실행
-5. 작성 완료된 .docx 파일을 사용자에게 전달
+3. 추출이 끝나면 별도 확인 메시지 없이 곧바로 품의서 생성 흐름을 호출
+4. Agent Flow(Run a prompt(Output: Document) → OneDrive Create file)로 품의서 .docx 생성 및 저장
+5. 완성된 .docx 파일 링크를 사용자에게 전달
 
 [작성 원칙]
 - 견적서에 명시된 숫자/금액은 절대 변경하지 말 것
@@ -142,6 +140,30 @@
 
 - 노드 추가: **"+ 추가" → "Create generative answers"** 또는 **"Prompt (AI Builder)"**
 - 입력: `QuoteImage`
+
+#### 4-2-1. 입력 데이터 지정 위치 (중요)
+
+Vision 추출이 실패하는 가장 흔한 원인은 **프롬프트만 넣고 입력 변수를 노드에 바인딩하지 않은 경우**입니다.
+
+1. Vision 노드 선택
+2. 우측 속성 패널에서 **Inputs (또는 Input data)** 섹션 확인
+3. **+ Add input** 클릭
+4. 입력 이름: `quote_image`
+5. 입력 타입: **File/Image**
+6. 입력 값: **`QuoteImage`** (Step 4-1에서 받은 파일 변수)
+
+> 체크포인트: 입력 목록에 `quote_image = QuoteImage` 가 보이면 정상입니다.
+
+#### 4-2-2. 샘플 이미지로 먼저 테스트 후 입력 고정
+
+실제 운영 전에 아래 순서로 반드시 점검하세요.
+
+1. Test 창에서 `sampledata_견적서.png` 업로드
+2. Vision 노드 실행 결과의 원본 출력(JSON)을 확인
+3. 원하는 필드가 정상 추출되는지 검증
+4. 이때 사용한 입력 변수(`QuoteImage`)를 그대로 운영 입력으로 고정
+
+> 권장: 샘플 테스트 2~3회 후, 누락/오인식 필드가 있으면 프롬프트를 먼저 보정하고 Step 5 연결을 진행하세요.
 - 프롬프트:
 
 ```text
@@ -155,127 +177,159 @@
 - JSON 외 다른 텍스트는 출력하지 말 것
 
 {
-  "공급처": {
-    "회사명": "",
-    "대표자": "",
-    "사업자번호": "",
-    "주소": "",
-    "담당자명": "",
-    "담당자연락처": ""
+  "supplier": {
+    "company_name": "",
+    "ceo_name": "",
+    "business_number": "",
+    "address": "",
+    "contact_name": "",
+    "contact_phone": ""
   },
-  "견적정보": {
-    "견적번호": "",
-    "견적일자": "",
-    "유효기간": ""
+  "quote": {
+    "quote_number": "",
+    "quote_date": "",
+    "valid_until": ""
   },
-  "품목리스트": [
+  "items": [
     {
-      "no": "",
-      "품명": "",
-      "규격": "",
-      "수량": "",
-      "단가": "",
-      "금액": ""
+      "line_no": "",
+      "item_name": "",
+      "spec": "",
+      "qty": "",
+      "unit_price": "",
+      "amount": ""
     }
   ],
-  "금액": {
-    "공급가액": "",
-    "부가세": "",
-    "합계금액": "",
-    "합계금액한글": ""
+  "amount": {
+    "supply_amount": "",
+    "vat": "",
+    "total_amount": "",
+    "total_amount_kr": ""
   },
-  "조건": {
-    "결제조건": "",
-    "납품일정": "",
-    "납품장소": "",
-    "보증기간": "",
-    "특이사항": ""
+  "terms": {
+    "payment_terms": "",
+    "delivery_schedule": "",
+    "delivery_place": "",
+    "warranty_period": "",
+    "notes": ""
   }
 }
 ```
 
-- 출력 변수 저장: `ExtractedData`
-
-### 4-3. 추출 결과 사용자 확인 (Message 노드)
-
-- 노드 추가: **"+ 추가" → "메시지 보내기(Send a message)"**
-- 메시지:
-
-```text
-아래 정보로 품의서를 작성하려고 합니다. 맞는지 확인해 주세요.
-
-📋 거래처: {ExtractedData.공급처.회사명}
-📅 견적일: {ExtractedData.견적정보.견적일자}
-💰 합계: {ExtractedData.금액.합계금액}원
-📦 품목 수: {품목 개수}개
-
-문제 없으면 "네" 라고 답해주세요. 수정할 부분이 있다면 알려주세요.
-```
-
-### 4-4. 사용자 승인 받기 (Question 노드)
-
-- 응답 유형: **다중 선택**
-- 선택지: `네, 진행해주세요` / `수정할 부분이 있어요`
-- 변수 저장: `UserApproval`
+- 출력 변수 저장: `VisionResult`
 
 ---
 
-## Step 5 — 품의서 Word 채우기 Flow 연결
+## Step 5 — 품의서 Word 문서 생성 (Agent Flow로 자동화)
 
-### 5-1. Flow 생성
+Step 4의 Vision 결과(`VisionResult.text`)를 **Agent Flow**에 텍스트로 넘기고, 흐름 안에서 **Prompt(Output: Document)** 실행 → **OneDrive에 저장** → **파일 링크를 토픽으로 반환**하는 구조로 만듭니다.
 
-1. 토픽에서 **"+ 추가" → "Power Automate 플로우 호출"**
-2. **"새 Flow 만들기"** 클릭
-3. Power Automate 편집기에서 아래 단계 구성
-
-### 5-2. Flow 단계
-
-| # | 액션 | 설정 |
-|---|---|---|
-| 1 | 트리거: Power Virtual Agents에서 호출 | 입력 매개변수: `ExtractedData_JSON` (텍스트) |
-| 2 | JSON 구문 분석 | 콘텐츠: `ExtractedData_JSON`<br>스키마: 위 4-2의 JSON 구조 |
-| 3 | OneDrive: 파일 콘텐츠 가져오기 | 파일: `/templates/품의서_템플릿.docx` |
-| 4 | Word Online: 템플릿 채우기 | 각 `{{변수}}`에 추출된 데이터 매핑 |
-| 5 | OneDrive: 파일 만들기 | 경로: `/Output/`<br>이름: `품의서_@{utcNow()}.docx`<br>콘텐츠: 4번 결과 |
-| 6 | 응답을 Power Virtual Agents로 반환 | 출력: `FileLink` (5번의 웹 링크) |
-
-### 5-3. 변수 매핑 예시
-
-```text
-{{거래처명}}      ← ExtractedData.공급처.회사명
-{{대표자}}        ← ExtractedData.공급처.대표자
-{{사업자번호}}    ← ExtractedData.공급처.사업자번호
-{{견적번호}}      ← ExtractedData.견적정보.견적번호
-{{견적일자}}      ← ExtractedData.견적정보.견적일자
-{{유효기간}}      ← ExtractedData.견적정보.유효기간
-{{공급가액}}      ← ExtractedData.금액.공급가액
-{{부가세}}        ← ExtractedData.금액.부가세
-{{합계금액}}      ← ExtractedData.금액.합계금액
-{{합계금액_한글}} ← ExtractedData.금액.합계금액한글
-{{결제조건}}      ← ExtractedData.조건.결제조건
-{{납품일정}}      ← ExtractedData.조건.납품일정
-{{납품장소}}      ← ExtractedData.조건.납품장소
-{{품의일자}}      ← utcNow() (오늘 날짜 자동 입력)
-{{기안자}}        ← 사용자 이름 (User.DisplayName 사용)
-{{부서}}          ← 사용자 부서 (Office 365 프로필에서)
+```
+토픽 (VisionResult.text)
+   ↓ Call a flow (inputText 전달)
+Agent Flow
+  ① When an agent calls the flow  — input: inputText
+  ② Run a prompt                  — Prompt "품의서 작성", Text input = inputText
+  ③ Create file (OneDrive)        — 품의서_yyyymmddhhmmss.docx, Content = Document Output
+  ④ Respond to the agent          — fileLink (Web URL)
+   ↓ fileLink 반환
+토픽: Message 노드로 사용자에게 다운로드 링크 전달
 ```
 
-> 🚫 **자주 하는 실수** — Word 템플릿의 `{{변수}}` 이름과 Flow의 매핑 키 이름이 **정확히 일치**해야 합니다. 띄어쓰기 한 칸이라도 다르면 매칭 안 됨. 변수명은 한글 사용 가능하지만 일관성 유지가 핵심.
+### 5-1. Prompt 도구 만들기 — `품의서 작성` (Output: Document)
 
-### 5-4. Flow를 토픽에 연결
+흐름 안에서 호출할 Prompt를 먼저 **독립된 도구**로 만듭니다.
 
-1. Flow 저장 후 토픽 편집기로 복귀
-2. Flow 호출 노드 입력값: `ExtractedData` (Step 4에서 만든 변수)
-3. Flow 출력값을 토픽 변수에 저장: `ResultFileLink`
-4. 마지막 메시지 노드 추가:
+1. 좌측 메뉴 **"도구(Tools)"** → **"+ 도구 추가"** → **"Prompt"** (또는 "+ 새 Prompt")
+2. 이름: `품의서 작성`
+3. 우측 상단 **Output** 드롭다운에서 **Document** 선택
+4. 모델: **GPT-4.1 mini** (또는 조직이 허용하는 상위 모델)
+5. **+ Add input** 으로 텍스트 입력 1개 추가 → 이름 `quote_text`, 타입 **Text**
+6. **Instructions**에 아래 내용 입력 (`[quote_text]` 는 5번에서 추가한 입력 토큰을 드래그 또는 "Text input" 칩으로 삽입):
+
+```text
+아래 견적서 텍스트를 기반으로 한국 기업 양식의 품의서 Word 문서를 작성하세요.
+
+[견적서 텍스트]
+[quote_text]
+
+[작성 규칙]
+- 견적서에 명시된 숫자/금액은 절대 변경하지 말 것
+- 한글 표기 합계금액(예: 삼천팔백이십이만오천원)은 그대로 보존
+- 견적서에 없는 항목(예산 과목, 협조 부서, 일정, 기대효과 등)은 맥락상 합리적인 값을 넣고 부제 끝에 "(수정필요)"를 덞붙일 것
+- 품의일자는 오늘 날짜로 기재
+- 품명/규격/수량/단가/금액은 표 형태로 구성
+- 출력은 바로 사용 가능한 품의서 Word 문서로 완성
+```
+
+7. 우측 **Test** 패널에서 샘플 견적서 텍스트로 한 번 실행 → 미리보기에 품의서가 깔끔하게 나오는지 확인 후 저장
+
+> 팁 — `(수정필요)` 표시가 붙는 항목은 견적서에 없는 내용을 LLM이 추정한 값이며, 기안자가 최종 검토하라는 신호입니다.
+
+### 5-2. Agent Flow 만들기 — `품의서 생성 흐름`
+
+이제 위 Prompt를 호출하고 OneDrive에 파일을 저장하는 흐름을 만듭니다.
+
+1. 좌측 메뉴 **"도구(Tools)"** → **"+ 도구 추가"** → **"새 Agent Flow"** (또는 "흐름 만들기")
+2. 이름: `품의서 생성 흐름`
+
+**(1) 트리거 — When an agent calls the flow**
+
+- **+ Add an input**
+  - 이름: `inputText`
+  - 타입: **Text**
+  - 설명: 견적서에서 추출한 원문 텍스트 (예: `견적서 text`)
+
+**(2) 액션 — Run a prompt**
+
+- **+ 새 단계** → **AI Builder** → **Run a prompt**
+- **Prompt**: 위에서 만든 `품의서 작성` 선택
+- **Text input**: 트리거 출력의 `inputText` 선택
+- 실행 결과로 **Document Output** (파일 콘텐츠)이 동적 콘텐츠로 노출됩니다.
+
+**(3) 액션 — OneDrive for Business / Create file**
+
+- **+ 새 단계** → **OneDrive for Business** → **Create file**
+- **Folder Path**: `/` (필요 시 `/Output` 같은 하위 폴더)
+- **File Name** (식 입력):
+
+  ```
+  concat('품의서_', formatDateTime(utcNow(), 'yyyyMMddHHmmss'), '.docx')
+  ```
+
+  > 개념적으로 Power Fx의 `품의서_` & `Text(Now(),"yyyymmddhhmmss")` & `.docx` 와 동일합니다.
+
+- **File Content**: 이전 단계 **Document Output** 선택
+
+**(4) Respond to the agent**
+
+- **+ 새 단계** → **Respond to the agent**
+- 출력 추가:
+  - 이름: `fileLink`
+  - 타입: **Text**
+  - 값: Create file 액션의 **Web URL** 동적 콘텐츠
+- (선택) 파일 자체를 함께 돌려주고 싶다면 추가 출력 `OUTPUT` (타입 **File**, 값 = Document Output)
+
+3. **저장** 후 **게시(Publish)** / 활성화
+
+### 5-3. 토픽에서 흐름 호출
+
+Step 4-2 (Vision 노드) 다음에 흐름을 호출합니다.
+
+1. **+ 추가** → **"도구(Tools)"** → `품의서 생성 흐름` 선택
+2. **입력** `inputText` = `VisionResult.text`
+3. **출력** `fileLink` → 토픽 변수 `ResultFileLink` 로 저장
+
+### 5-4. 사용자 안내 메시지
+
+**+ 추가** → **메시지 보내기(Send a message)**:
 
 ```text
 품의서가 완성되었습니다! 🎉
 
 📎 다운로드: {ResultFileLink}
 
-수정이 필요하시면 다시 견적서 사진을 보내주시거나
-"품의서 수정해줘"라고 말씀해 주세요.
+문서 내 "(수정필요)" 표시된 항목은 기안자가 직접 확인해 주세요.
 ```
 
 ---
@@ -294,23 +348,10 @@
 |---|---|---|
 | 1 | "견적서 사진 보낼게" | 이미지 업로드 요청 |
 | 2 | (견적서 이미지 첨부) | 분석 시작 메시지 → 추출 결과 표시 |
-| 3 | "네, 진행해주세요" | 품의서 작성 → 다운로드 링크 제공 |
+| 3 | (자동 진행) | 품의서 작성 → 다운로드 링크 제공 |
 | 4 | "거래처명이 틀렸어" | 해당 필드 재질문 |
 
 > 💡 **데모 팁** — 실제 데모에서는 **처리 시간**을 메우는 인터랙션이 중요합니다. Vision 추출에 5~10초 정도 소요되므로, 추출 시작 직전에 "잠시만요, 견적서를 꼼꼼히 읽어볼게요 👀" 같은 메시지를 넣어주세요.
-
----
-
-## 문제 해결 가이드
-
-| 증상 | 원인 | 해결 |
-|---|---|---|
-| 이미지를 인식하지 못함 | 해상도가 낮거나 글자가 흐림 | 최소 1000px 이상 권장, 정면에서 촬영 |
-| 숫자가 잘못 추출됨 | OCR 모델이 0/O, 1/l 혼동 | 프롬프트에 "숫자는 반드시 한국 숫자 표기로 검증" 문구 추가 |
-| 품목 일부 누락 | 표 인식 시 행 누락 | JSON 응답에 "품목 총 개수"를 명시하도록 프롬프트 수정 → Flow에서 검증 |
-| Word 파일에 변수가 그대로 노출 | 템플릿의 `{{변수}}`와 Flow 매핑 키 불일치 | Word 템플릿을 다시 열어 변수명 복사 → Flow에 그대로 붙여넣기 |
-| 한글 깨짐 | Word 템플릿이 영문 폰트만 지정 | 템플릿 폰트를 "맑은 고딕" 또는 "Malgun Gothic"으로 통일 |
-| Flow 실행 권한 오류 | OneDrive/SharePoint 연결 누락 | Flow의 각 OneDrive 액션에서 "다시 로그인" |
 
 ---
 
@@ -328,7 +369,7 @@
 ## 📚 참고 자료
 
 - [Copilot Studio 공식 문서](https://learn.microsoft.com/microsoft-copilot-studio/)
-- [Power Automate Word 템플릿 채우기](https://learn.microsoft.com/power-automate/)
+- [AI Builder Prompt (Document 출력)](https://learn.microsoft.com/ai-builder/prompts-overview)
 - [AI Builder OCR 가이드](https://learn.microsoft.com/ai-builder/prebuilt-text-recognizer)
 
 ---
