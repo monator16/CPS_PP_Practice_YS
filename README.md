@@ -71,6 +71,24 @@ Copilot Studio 에이전트를 **Azure 프라이빗 네트워크(VNet)와 안전
 
 ---
 
+### 4. [document-generation](./document-generation/) - 견적서 이미지 기반 품의서 자동 생성
+
+**대상**: 문서 자동화 시나리오를 빠르게 구현하려는 실무자
+
+견적서 이미지 한 장을 입력으로 받아 Vision 기반 추출을 수행하고, Word 템플릿을 채워 최종 품의서를 자동 생성하는 실습입니다.
+
+#### 학습 내용
+- **실습가이드_견적서_to_품의서.md** - Copilot Studio 토픽/프롬프트/Flow 연결 전체 가이드
+- **sampledata_견적서.png** - 견적서 인식 테스트용 샘플 이미지
+- **품의서_템플릿.docx** - 자동 채움용 Word 템플릿
+
+#### 핵심 포인트
+- Vision(OCR) + 구조화(JSON) 추출 패턴
+- 사용자 확인 후 문서 생성하는 안전한 승인 플로우
+- Power Automate로 Word 템플릿 자동 채움 및 파일 반환
+
+---
+
 ## 시작하기
 
 ### 사전 요구사항
@@ -81,7 +99,8 @@ Copilot Studio 에이전트를 **Azure 프라이빗 네트워크(VNet)와 안전
 ### 학습 순서 추천
 1. **AgentAcademy** - 기본기 다지기 (A1 → A2 → A3 → A4)
 2. **Agentthon-26-MSKorea** - 실전 멀티 에이전트 구축
-3. **CPS-Vnet-Integration** - 엔터프라이즈 레벨 보안 구성
+3. **document-generation** - 이미지 기반 문서 자동화 구현
+4. **CPS-Vnet-Integration** - 엔터프라이즈 레벨 보안 구성
 
 ---
 
@@ -102,4 +121,4 @@ Copilot Studio 에이전트를 **Azure 프라이빗 네트워크(VNet)와 안전
 ---
 
 **Repository**: https://github.com/babycrowLee/Copilot-Studio-Hands-on  
-**Last Updated**: March 2026
+**Last Updated**: May 2026
