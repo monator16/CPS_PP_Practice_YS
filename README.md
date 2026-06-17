@@ -89,6 +89,24 @@ Copilot Studio 에이전트를 **Azure 프라이빗 네트워크(VNet)와 안전
 
 ---
 
+### 5. [daily-brief-workflow](./daily-brief-workflow/) - 신규 Workflow 핸즈온
+
+**대상**: Copilot Studio Workflow 신기능을 빠르게 체험하려는 실습자  
+**작성자**: Solution Engineer 이영서
+
+Copilot Studio의 신규 기능(Workflow + Custom Structured Output + Researcher node)을 활용해, 매일 특정 회사에 대한 뉴스 브리프를 자동 생성하고 이메일로 발송하는 워크플로우를 30분 안에 구축합니다.
+
+#### 학습 내용
+- **DailyBrief_HandsOn_Guide.md** - Workflow 전체 구성 가이드 (영문)
+- **DailyBrief_HandsOn_Guide_kr.md** - Workflow 전체 구성 가이드 (한국어)
+
+#### 핵심 포인트
+- Researcher 노드를 이용한 실시간 웹 정보 수집
+- Custom Structured Output으로 JSON 구조화 출력
+- Multi-Agent(Critic / Analyst / Composer) 파이프라인
+- SharePoint 저장 + 이메일 발송 자동화
+
+---
 ## 시작하기
 
 ### 사전 요구사항
@@ -100,7 +118,8 @@ Copilot Studio 에이전트를 **Azure 프라이빗 네트워크(VNet)와 안전
 1. **AgentAcademy** - 기본기 다지기 (A1 → A2 → A3 → A4)
 2. **Agentthon-26-MSKorea** - 실전 멀티 에이전트 구축
 3. **document-generation** - 이미지 기반 문서 자동화 구현
-4. **CPS-Vnet-Integration** - 엔터프라이즈 레벨 보안 구성
+4. **daily-brief-workflow** - 신규 Workflow 핸즈온 (Researcher + Structured Output)
+5. **CPS-Vnet-Integration** - 엔터프라이즈 레벨 보안 구성
 
 ---
 
@@ -121,4 +140,4 @@ Copilot Studio 에이전트를 **Azure 프라이빗 네트워크(VNet)와 안전
 ---
 
 **Repository**: https://github.com/babycrowLee/Copilot-Studio-Hands-on  
-**Last Updated**: May 2026
+**Last Updated**: June 2026
